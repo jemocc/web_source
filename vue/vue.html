@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="vue.min.js"></script>
+    <style>
+        
+    </style>
+</head>
+<body>
+    <div id="app">
+        {{date}}
+        <button @click="flashDate()"></button>
+    </div>
+</body>
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            date: new Date()
+        },
+        methods: {
+            flashDate: function(){
+                let _this = this;
+                this.timer = setInterval(function(){
+                    _this.date = new Date();
+                    }, 1000);
+            }
+        },
+        mounted: function(){
+            flashDate();
+        },
+        beforeDestroy: function(){
+            if(this.timer){
+                clearInterval(this.timer);
+            }
+        }
+    });
+</script>
+</html>

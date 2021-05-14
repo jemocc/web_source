@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        .active {
+            color: green;
+        }
+        .error {
+            background-color: red;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <span v-html="link"></span>
+        <div :class="dclasses">class</div>
+    </div>
+</body>
+<script src="vue.js"></script>
+<script>
+    var app = new Vue({
+        el: '#app',     //el 用于指定一个页面中己存在的 DOM 元素来挂载 Vue 实例
+        data: {
+            link: '<a href="#">link</a>',
+            isActive: true,
+            isError: true,
+            flag: 'yes'
+        },
+        created: function(){        //实力创建完成后调用，尚未挂载实例
+            console.log(this.name);
+        },
+        mounted: function(){        //el挂载实例后调用
+            console.log(this.$el);
+        },
+        beforeDestory(){        //实例销毁前调用
+
+        },
+        computed: {
+            dclasses: function(){
+                return {
+                    active: this.isActive && this.isError,
+                    'text-fail': this.flag === 'yes'
+                }
+            }
+        }
+    });
+</script>
+</html>

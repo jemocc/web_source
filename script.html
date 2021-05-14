@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>发券</title>
+    <link rel="stylesheet" href="vue/element-ui/index.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+        }
+        .el-row {
+            text-align: center;
+        }
+        .main-box {
+            width: 50%;
+            min-width: 500px;
+            height: 800px;
+            margin: auto;
+            margin-top: 80px;
+        }
+        .row-style {
+
+        }
+        .col-style {
+            padding: 0 !important;
+            border: none !important;
+        }
+        .el-img-style {
+            width: 24px; 
+            height: 24px;
+            margin-top: 8px;
+        }
+        .font-style {
+            font-size: 18px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="main-box">
+            <el-row>
+              <el-col :span="23">
+                    <el-row>
+                        <input type="file" name="file" @change="handleChange(this)" />
+                        <el-button @click="dialogVisible = false">开始发券</el-button>
+                    </el-row>
+                </el-col>
+            </el-row>
+        </div>
+    </div>
+</body>
+<script src="vue/vue.js"></script>
+<script src="vue/element-ui/index.js"></script>
+<script>
+    const app = new Vue({
+        el: "#app",
+        data: {
+            fileList: []
+        },
+        methods: {
+            handleChange: function(source) {
+                console.log("handleChange");
+                console.dir(source.file)
+                var file = source.files[0];
+                if(window.FileReader) {
+                //     var fr = new FileReader();
+                // fr.onloadend = function(e) {
+                //     document.getElementById("portrait").src = e.target.result;
+                // };
+                // fr.readAsDataURL(file);
+                    let fr = new FileReader();
+                    fr.readAsText(file);
+                    fr.onloadend = function(e) {
+                        let fileString = e.target.result
+                        console.log(fileString)
+                    } 
+                    
+                }
+
+            },
+            handleRemove: function() {
+                console.log("handleRemove");
+            },
+            submitUpload: function() {
+                console.log("submitUpload");
+            }
+        },
+        created: function() {
+
+        }
+    });
+</script>
+
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>vue-router test</title>
+
+    <script src="vue.js"></script>
+    <script src="vue-router.js"></script>
+
+    <style>
+        #app {
+            width: 100%;
+            background: gray;
+        }
+
+        .content {
+            width: 800px;
+            margin: 50px auto;
+            background: orchid;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .content-left {
+            display: inline-block;
+            width: 250px;
+            background: greenyellow;
+            vertical-align: top;
+            box-shadow: 5px 4px 2px grey;
+        }
+
+        .content-right {
+            display: inline-block;
+            width: 450px;
+            background: olivedrab;
+            padding: 5px;
+            box-shadow: 5px 4px 2px grey;
+        }
+
+        .content-r-c {
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <h1>HELLO APP</h1>
+        <div class="content">
+            <div class="content-left">
+                <p>content-left</p>
+                <router-view name="cleft"></router-view>
+            </div>
+            <div class="content-right">
+                <p>content-right</p>
+                <router-view name="cright"></router-view>
+                <!-- <router-view name="peom"></router-view> -->
+            </div>
+        </div>
+        <p>
+            <!-- 使用router-link 组件来导航 -->
+            <!-- 通过传入 to 属性来指定连接 -->
+            <!-- router-link 会被默认渲染成<a>标签 -->
+            <router-link to="/user/foo/profile">to-foo-profile</router-link>
+            <router-link to="/user/foo/posts">to-foo-posts</router-link>
+            <router-link to="/user/bar">to-bar</router-link>
+            <router-link to="/teacher/002/zhangshuai">to-t-zhangzhuai</router-link>
+            <router-link to="/teacher/002/duanqiong">to-t-duanqiong</router-link>
+        </p>
+        <!-- 路由出口     -->
+        <!-- 路由匹配到的组件将会旋绕到这里 -->
+        <router-view></router-view>
+    </div>
+
+    <script>
+        // 如果使用魔款话机制编程，导入Vue和VueRouter 需要使用Vue.use(VueRouter)
+        // 1.定义路由组件，可以从其它文件import进来
+        // const Foo = {template: '<div>welcome to foo</div>'}
+        // const Bar = {template: '<div>welcome to bar</div>'}
+        // ------------------------------------------------------
+        // type2:一个『路径参数』使用冒号 : 标记。当匹配到一个路由时，
+        // 参数值会被设置到 this.$route.params，可以在每个组件内使用。
+        // const User = {template: '<div>Welcom User :{{ $route.params.id }}</div>'}
+        // type3：嵌套路由
+        const User = {
+            template: '\
+                <div class="user">\
+                    <h2>User: {{$route.params.id}}</h2>\
+                    <router-view></router-view>\
+                </div>\
+            '
+        }
+        const UserProfile = {
+            template: '\
+                <div>Profile: \
+                    id: {{$route.params.id}}\
+                    cid: {{$route.params.cid}}\
+                </div>\
+             '
+        }
+        const TeacherLeft = {
+            // props 将组件与 $route 解耦合
+            props: ['group'],
+            template: '\
+                <div>\
+                    <h3>TeacherGroup</h3>\
+                    <p>GroupId: {{group}}</p>\
+                </div>\
+            '
+        }
+        const Peom1 = {
+            template: '\
+                <div>\
+                    <h4>Do Not Go Gentle into That Good Night</h4>\
+                    <p style="text-align: right">Dylan Thomas</p>\
+                    <p>\
+                        Do not go gentle into that good night,<br/>\
+                        Old age should burn and rave at close of the day;<br/>\
+                        Rage, rage against the dying of the light.<br/>\
+                    </p>\
+                    <p>\
+                        Though wise men at their end know dark is right,<br/>\
+                        Because their words had forked no lightning they<br/>\
+                        Do not go gentle into that good night.\
+                    </p>\
+                    <!--<p>\
+                        Good men, the last wave by, crying how bright<br/>\
+                        Their frail deeds might have danced in a green bay,<br/>\
+                        Rage, rage against the dying of the light.\
+                    </p>\
+                    <p>\
+                        Wild men, who caught and sang the sun in flight,<br/>\
+                        And learn, too late, they grieved it on its way,<br/>\
+                        Do not go gentle into that good night.\
+                    </p>\
+                    <p>\
+                        Grave men, near death, who see with blinding sight<br/>\
+                        Blind eyes could blaze like meteors and be gay,<br/>\
+                        Rage, rage against the dying of the light.\
+                    </p>\
+                    <p>\
+                        And you, my father, there on the sad height,<br/>\
+                        Curse, bless, me now with your fierce tears, I pray.<br/>\
+                        Do not go gentle into that good night.<br/>\
+                        Rage, rage against the dying of the light.\
+                    <p/>-->\
+                </div>\
+            '
+        }
+        const TeacherRight = {
+            // 组件与$route 耦合
+            template: '\
+                <div>\
+                    <h3>TeacherName</h3>\
+                    <p>TeacherName: {{$route.params.name}}</p>\
+                    <router-view name="peom"></router-view>\
+                </div>\
+            '
+        }
+        const UserPosts = {
+            template: '<div>Posts: {{$route.params.cid}}</div>'
+        }
+        const UserHome = {
+            template: '<div>no such route</div>'
+        }
+        const Teacher = {
+            template: '\
+                <div>\
+                    <h1>Welcom Teacher!</h1>\
+                </div>\
+            ',
+            // 路由参数变化响应。当渲染同一个组件时，如/user/foo 到/user/bar 原来的组件实例会被复用，
+            // 不会销毁在创建，也就是其生命钩子将不会在被调用。
+            // style1：通过简单的watch(监测变化) $route对象，实现对路由参数变化做出响应
+            // watch:{
+            //     '$route'(to, from){
+            //         //对路由变化做出响应
+            //     }
+            // }
+            // style2：使用 2.2 中引入的 beforeRouteUpdate 守卫：
+            // beforeRouteUpdate(to, from, next) {
+            //对路由变化做出响应
+
+            // 编程式导航:router.push(location, onComplete?, onAbort?)
+            // 参数中 onComplete, onAbort 回调作为第二个和第三个参数。
+            // 这些回调将会在导航成功完成 (在所有的异步钩子被解析之后) 
+            // 或终止 (导航到相同的路由、或在当前导航完成之前导航到另一个不同的路由) 的时候进行相应的调用。
+            // router.push():会向history中添加新纪录，
+            // router.replach():会替换当前history中的当前记录
+            // router.go(1)：在history记录中前进一步
+
+            // router.push('/error/404');
+            // router.push({path: '/error/500'});
+            // router.push({ name: 'error', params: { errorcode: 403 }})
+            // router.push({ path: '/error', query: { plan: 'private' }});
+            // }
+
+        }
+        const Error = {
+            template: '\
+                <div>\
+                    <p>Error Page</p>\
+                    <p>error-code: {{$route.params.errorcode}}</p>\
+                </div>\
+            '
+        }
+        // 2.定义路由
+        // 每个路由应该映射一个组件。其中“component”可以是通过Vue.extend()创建的组件构造器，
+        // 或者只是一个组件配置对象。
+        // type1:简单路由定义
+        // const routes = [
+        //     {path: '/foo',component: Foo},
+        //     {path: '/bar',component: Bar}
+        // ]
+        // --------------------------------------------------------------------
+        // type2:动态路由匹配
+        const routes = [
+            {
+                path: '/user/:id', 
+                component: User,
+                children: [
+                    {
+                        // 当/user/:id/profile匹配成功的时候，UserProfile会被渲染在User的<route-view>中
+                        path: 'profile/:cid',
+                        component: UserProfile
+                    },
+                    {
+                        path: 'posts/:cid',
+                        component: UserPosts
+                    },
+                    {
+                        path: '',
+                        component: UserHome
+                    }
+                ]
+            },
+            {
+                path: '/teacher/:group/:name',
+                // 根据route name渲染多个route-view
+                components: {
+                    default: Teacher,
+                    cleft: TeacherLeft,
+                    cright: TeacherRight,
+                },
+                children: [{
+                    path: '',
+                    components: {
+                        peom: Peom1,
+                    },
+                }],
+                props: {
+                    default: false,
+                    // 如果props 被设置为true时，route.params 将会被设置为组件属性
+                    cleft: true,
+                    // 当传递的为一个对象时，它会被原样设置为组件属性
+                    // cright: { class: 'content-r-c'}
+                    // 也可以传递函数，实现静态值与路由的值结合
+                    cright: re => {
+                        return true;
+                    },
+                    peom: false,
+                },
+                // 别名
+                alias: '/laoshi/:group/:name'
+            },
+            {
+                name: 'error',
+                path: '/error/:errorcode',
+                component: Error
+            },
+            {
+                // 重定向
+                path: '/error',
+                // 直接重定向
+                // redirect: '/error/0000'
+                // 重定向目标是一个命名的路由
+                // redirect: {name: 'error', params: {errorcode: '0000'}}
+                // 重定向一个方法，动态返回重定向的目标
+                redirect: to => {
+                    //方法接收目标路由作为参数
+                    // return 重定向的 字符串路径/路径对象
+                }
+
+            }
+        ]
+
+        // 3.创建router 实例，然后传routes 配置，参数配置
+        const router = new VueRouter({
+            //默认为hash 模式，现在打开history 模式
+            // mode: 'history',
+            routes //缩写，相当于routes： routes
+        })
+
+        // 4.创建和挂载根实例。要通过router配置参数注入路由，从而让整个应用都拥有路由功能。
+        const app = new Vue({
+            router
+        }).$mount('#app')
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Vue.js Test</title>
+    <script src="vue.min.js"></script>
+
+    <style>
+        .class1 {
+            background: rebeccapurple;
+            width: 100px;
+            height: 100px;
+        }
+
+        #Abs {
+            background: blue;
+        }
+
+        .class2 {
+            background: red;
+        }
+
+        .class3 {
+            background: green;
+        }
+
+        div {
+            margin: 10px;
+            border-bottom: 2px solid gray;
+            border-left: 2px solid gray;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div v-show=false>
+            <p>Message: {{message}}</p>
+            <div v-html="mesh"></div>
+            <div v-bind:class="{class1 : class1r}">class</div>
+            <div>javaScript支持1：{{5+5}}</div>
+            <div>javaScript支持2：{{ok?'yes':'no'}}</div>
+            <div>javaScript支持3：{{mes2.split('.').reverse().join('')}}</div>
+            <div v-if="flag1 === 'a'">v-if test </div>
+            <div v-else-if="flag1 === 'b'">v-else-if test</div>
+            <div v-else>v-else test</div>
+            <div><a v-bind:href="url1">v-bind url test :href</a></div>
+            <div v-on:click="doSomething1">v-on click test @click</div>
+            <div>双向数据绑定：<input v-model="mes2" /></div>
+            <div>过滤器1：{{mes3|filters1}}</div>
+            <div v-bind:id="idf|filters1">过滤器2</div>
+            <div v-show=true>v-show</div>
+            <div>
+                <ol>
+                    <li v-for="seat in seats">{{seat.name}}</li>
+                </ol>
+                <ul>
+                    <li v-for="(value, key, index) in object1">{{index}}.{{key}}:{{value}}</li>
+                </ul>
+            </div>
+            <div>message的计算属性： {{reverseMessage}}</div>
+            <div :class="{'class1': true, 'class2': true}">yangshibangding</div>
+            <div :class="['class1', false?'class2':'', class3r]">yangshibangding</div>
+            <div :style="class4r">yangshibangding</div>
+            <button @click="count += 1">+1</button>
+            <p>{{count}}</p>
+            <button @click="doSomething2">doSomething2</button>
+            <button @click="say('hi')">say hi</button>
+            <!-- .self只当事件在该元素本身（而不是子元素）触发时触发回调 -->
+            <div @click.self="doSomething2" style="background: red; height: 100px; width: 100px">
+                <!-- .once click 事件只能点击一次，2.1.4版本新增 -->
+                <span @click.once="doSomething2" style="background: orange; height: 50px; width: 50px; display: block">
+                     <!-- .stop阻止单击事件冒泡 @click@keyup.keycode@click.ctrl(ctrl + click) -->
+                    <button @click.stop="doSomething2" style="background: blue; height: 20px; width: 20px">sort</button>
+                </span>
+            </div>
+            <div>
+                <div>
+                    <input type="checkbox" id="tianmao" value="TIANMAO" v-model="checked" /><label for="tianmao">tianmao</label>
+                    <!-- 复选 -->
+                    <input type="checkbox" id="taobao" value="TIAOBAO" v-model="checkedNames" /><label for="taobao">taobao</label>
+                    <input type="checkbox" id="jingdong" value="JINGDONG" v-model="checkedNames" /><label for="jingdong">jingdong</label>
+                    <input type="checkbox" id="meituan" value="MEITUAN" v-model="checkedNames" /><label for="meituan">meituan</label>
+                    <div>{{checkedNames}}</div>
+                    <!-- 单选 -->
+                    <input type="radio" id="taobaoR" value="TIAOBAO" v-model="picked" /><label for="taobaoR">taobao</label>
+                    <input type="radio" id="jingdongR" value="JINGDONG" v-model="picked" /><label for="jingdongR">jingdong</label>
+                    <input type="radio" id="meituanR" value="MEITUAN" v-model="picked" /><label for="meituanR">meituan</label>
+                    <div>{{picked}}</div>
+                </div>
+                <div>
+                    <select v-model="selected" name="fruit">
+                        <option value="">选择一个网站</option>
+                        <option value="www.runoob.com">Runoob</option>
+                        <option value="www.google.com">Google</option>
+                    </select>
+
+                    <div id="output">
+                        选择的网站是: {{selected}}
+                    </div>
+                </div>
+                <div>
+                    输入：<input type="text" id="mark1" value="0" v-model.lazy="imark1"/><br/>
+                    获得：{{imark1}},  .lazy 实现不实时同步输入数据（.number, .trim）。
+                </div>
+                <div>
+                    <input type="checkbox" id="inpSiChuan" value="pro1" v-model="proviceNames" @click="showIsChecked(event)"/><label for="inpSiChuan">Sichuan</label>
+                    <input type="checkbox" id="inpShanghai" value="pro2" v-model="proviceNames"/><label for="inpShanghai">Shanghai</label>
+                    <input type="checkbox" id="inpBeijing" value="pro3" v-model="proviceNames"/><label for="inpBeijing">Beijing</label>
+                    <input type="checkbox" id="inpHeBei" value="pro4" v-model="proviceNames"/><label for="inpHeBei">HeBei</label>
+                    <input type="checkbox" id="inpNoAll" value="" v-model="checkNo" @click="checkedNo"/><label for="inpNoAll">checkNo</label>
+                    <input type="checkbox" id="inpAll" value="" v-model="checkAll" @click="checkedAll"/><label for="inpAll">checkAll</label>
+                </div>
+                <div>{{proviceNames}}</div>
+            </div>
+            <div>
+                <tradegroup></tradegroup>
+                <childtradegroup></childtradegroup>
+                <childp :mesp="message"></childp>
+            </div>
+        </div>
+        <div>
+            <div style="width: 100px">{{total}}</div>
+            <counttotal @increment="addTotal"></counttotal>
+            <counttotal @increment="addTotal"></counttotal>
+            <p v-runoob:hello.a.b="message"></p>
+        </div>
+    </div>
+    <div id="app2">
+        <input v-focus></div>
+
+    </div>
+    <script>    
+        var data = { a: 1 };
+        Vue.component('tradegroup', {
+            template: '<h1>tradegroup!</h1>'
+        })
+        Vue.component('childp', {
+            props: ['mesp'],
+            template: '<h1>{{mesp}}</h1>'
+        })
+        var childTemplate = {
+            template: '<h1>childTemplate!</h1>'
+        }
+        Vue.directive('focus', {
+            // 元素插入的时候自动获得焦点
+            inserted: function(el){
+                el.focus();
+            }
+        })
+        Vue.component('counttotal', {
+            template: '<button @click="increment">{{count}}</button>',
+            data: function(){
+                return {
+                    count: 0
+                }
+            },
+            methods: {
+                increment: function(){
+                    this.count += 1;
+                    this.$emit('increment');
+                }
+            }
+        })
+        var vm = new Vue({
+            el: '#app',
+            data: {
+                total: 0,
+                message: '文本插值',
+                mesh: '<h1>HTML插值</h1>',
+                class1r: true,
+                ok: true,
+                mes2: 'a.b.c.d',
+                flag1: 'b',
+                url1: 'http://www.baidu.com',
+                mes2: ' v-model. input. test',
+                mes3: 'asdf',
+                idf: 'abs',
+                seats: [
+                    { name: 'a' },
+                    { name: 'b' },
+                    { name: 'c' }
+                ],
+                object1: {
+                    name: 'object1',
+                    id: 1
+                },
+                class3r: 'class3',
+                class4r: {
+                    background: 'red'
+                },
+                count: 0,
+                checked: true,
+                checkedNames: [],
+                picked: 'TIAOBAO',
+                selected: '',
+                imark1: '',
+                proviceNames: [] 
+
+            }, 
+            methods: {
+                // getAnswer: _.debounce(function() {
+                //     axios.get('https://yesno.wtf/api')
+                //     .then(function (response) {
+                //         vm.answer = _.capitalize(response.data.answer)
+                //     })
+                //     .catch(function (error) {
+                //         vm.answer = 'Error! Could not reach the API. ' + error
+                //     })
+                // }, 500),
+                doSomething1: function () {
+                    this.message = this.message.split('').reverse().join('');
+                    vm.setObject1 = '3 huiming';
+                },
+                doSomething2: function (event) {
+                    alert(event.target.tagName);
+                },
+                say: function (mes) {
+                    alert(mes);
+                },
+                showIsChecked: function(event){
+
+                },
+                checkedAll: function(){
+                    this.proviceNames = ["pro1", "pro2", "pro3", "pro4"];
+                },
+                checkedNo: function(){
+                    this.proviceNames = [];
+                },
+                addTotal: function(){
+                    this.total += 1;
+                }
+            },
+            filters: {
+                filters1: function (value) {
+                    return value.charAt(0).toUpperCase() + value.slice(1);
+                }
+            },
+            computed: {
+                reverseMessage: function () {
+                    return this.message.split('').reverse().join('');
+                },
+                setObject1: {
+                    get: function () {
+                        return this.object1.id + '.' + this.object1.name;
+                    },
+                    set: function (newValue) {
+                        var temp = newValue.split(' ');
+                        alert('temp[0]:' + temp[0] + ' temp[1]:' + temp[1]);
+                        this.object1.id = temp[0];
+                        this.object1.name = temp[1];
+                    }
+                },
+                checkAll: function(){
+                    if(this.proviceNames.length == 4){
+                        return true;
+                    } else {
+                        return false;
+                    }
+                },
+                checkNo: function(){
+                    if(this.proviceNames.length == 0){
+                        return true;
+                    } else {
+                        return false;
+                    }
+                },
+
+            },
+            components: {
+                'childtradegroup': childTemplate,
+            },
+            directives: {
+                focus: {
+                    inserted: function(el){
+                        el.focus();
+                    }
+                },
+                runoob: {
+                    bind: function(el, binding, vnode){
+                        var s = JSON.stringify;
+                        el.innerHTML = 
+                            'name'          + s(binding.name) + '<br/>' +
+                            'value: '       + s(binding.value) + '<br>' +
+                            'expression: '  + s(binding.expression) + '<br>' +
+                            'argument: '    + s(binding.arg) + '<br>' +
+                            'modifiers: '   + s(binding.modifiers) + '<br>' +
+                            'vnode keys: '  + Object.keys(vnode).join(', ')
+                    }
+                }
+            }
+        });
+        vm.mes3 = 'zxcv';
+    </script>
+</body>
+
+</html>

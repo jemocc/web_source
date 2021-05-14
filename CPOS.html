@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>C端POS模拟</title>
+    <link rel="stylesheet" href="vue/element-ui/index.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+        }
+
+        .el-card__header,
+        .msg-head {
+            padding: 10px 20px;
+        }
+
+        .item {
+            border: 1px #EBEEF5 solid;
+            padding: 5px;
+            border-radius: 5px 10px;
+            list-style: none;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .json-view {
+            height: 700px;
+            overflow: auto;
+        }
+
+        .json-view::-webkit-scrollbar {
+            display: none
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" style="padding-top: 30px;">
+        <el-row>
+            <el-col :span="20" :offset="2">
+                <el-tabs v-model="activePage" type="border-card" @tab-click="handleChangePage">
+                    <el-tab-pane label="HTTP" name="hp">
+                        <el-row style="height: 800px;">
+                            <el-col :span="spanList[0]">
+                                <el-card class="box-card" shadow="never">
+                                    <div slot="header" class="clearfix">
+                                        <span>请求报文</span>
+                                        <el-link type="primary" style="float: right">
+                                            <i class="el-icon-plus" v-show="isFold" @click="unfold(0)"></i>
+                                            <i class="el-icon-minus" v-show="!isFold" @click="fold"></i>
+                                        </el-link>
+                                    </div>
+                                    <pre class="json-view" contenteditable="true" ref="req">{{ reqData }}</pre>
+                                </el-card>
+                            </el-col>
+                            <el-col :span="spanList[1]">
+                                <el-card class="box-card" shadow="never">
+                                    <div slot="header" class="clearfix">
+                                        <span>请求</span>
+                                        <el-button style="float: right; padding: 3px 0" type="text" @click="t1">发送
+                                        </el-button>
+                                    </div>
+                                    <ul>
+                                        <li v-for="i in requests" @click="selReq(i)" class="item">
+                                            <p>{{ i.name }}</p>
+                                            <div style="width: 1000px;">
+                                                <el-tag type="success" size="mini">{{ i.type }}</el-tag>
+                                                <el-tag type="warning" size="mini">{{ i.url }}</el-tag>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </el-card>
+                            </el-col>
+                            <el-col :span="spanList[2]">
+                                <el-card class="box-card" shadow="never">
+                                    <div slot="header" class="clearfix">
+                                        <span>响应报文</span>
+                                        <el-link type="primary" style="float: right">
+                                            <i class="el-icon-plus" v-show="isFold" @click="unfold(2)"></i>
+                                            <i class="el-icon-minus" v-show="!isFold" @click="fold"></i>
+                                        </el-link>
+                                    </div>
+                                    <pre class="json-view">{{ rspData }}</pre>
+                                </el-card>
+                            </el-col>
+                        </el-row>
+
+                    </el-tab-pane>
+                    <el-tab-pane label="FILE SERVER" name="fp">
+                        <el-container style="height: 800px; border: 1px solid #eee">
+                            <el-aside width="200px" style="background-color: rgb(238, 241, 246)">
+                                <ul class="infinite-list" v-infinite-scroll="loadFileindexData" style="overflow:auto">
+                                    <li v-for="i in data" class="infinite-list-item">
+                                        <el-link type="primary" @click="loadFile(i.id, i.name)">{{ i.name }}</el-link>
+                                    </li>
+                                </ul>
+                            </el-aside>
+                            <el-container>
+                                <el-header style="text-align: left; font-size: 12px; height: 40px; padding: 3px 20px;">
+                                    <el-upload class="upload-demo" ref="upload"
+                                        action="http://localhost:9300/api/upload" multiple
+                                        :on-success="reloadFileIndexData" :auto-upload="false"
+                                        style="display: inline-block;">
+                                        <el-button slot="trigger" size="small" type="primary">选取文件</el-button>
+                                        <el-button style="margin-left: 10px;" size="small" type="success"
+                                            @click="submitUpload">上传到服务器</el-button>
+                                    </el-upload>
+                                    <el-switch v-model="isEditMode" active-text="编辑" inactive-text="查看"
+                                        style="padding: 6px 0 6px 20px; vertical-align: top;"></el-switch>
+                                </el-header>
+                                <el-main style="padding: 10px 20px;">
+                                    <div id="placeholder" style="height: 100%"></div>
+                                </el-main>
+                            </el-container>
+                        </el-container>
+                    </el-tab-pane>
+                </el-tabs>
+            </el-col>
+        </el-row>
+    </div>
+</body>
+<script src="vue/vue.js"></script>
+<script src="vue/element-ui/index.js"></script>
+<script src="vue/moment.js"></script>
+<script src="md5.js"  type='text/javascript'></script>
+<script src="jquery.min.js"  type='text/javascript'></script>
+<script src="UmoAPI.js"></script>
+<!-- <script type="text/javascript" src="http://192.168.0.103:9200/web-apps/apps/api/documents/api.js"></script> -->
+<script>
+    const reqs = [{
+        name: '查询文件服务器文件列表',
+        type: 'POST',
+        url: 'http://127.0.0.1:9300/api/query',
+        data: { 'page': 1, "size": 20 }
+    }, {
+        name: '获取用户文件柜',
+        type: 'POST',
+        url: 'http://112.33.60.154:9097/api/filecabinet/getuserfile',
+        data: { }
+    }, {
+        name: '发券',
+        type: 'GET',
+        url: 'api/dispatch-island-coupon-package',
+        data: { }
+    }];
+    const app = new Vue({
+        el: "#app",
+        data: {
+            spanList: [9, 6, 9],
+            data: [],
+            activePage: "hp",
+            contentType: ["application/json", "application/x-www-form-urlencoded", "multipart/form-data", "application/octet-stream"],
+            pageNum: 0,
+            hasMore: true,
+            docEditor: null,
+            showConfig: {
+                mode: 'edit',
+                data: null
+            },
+            isFold: true,
+            requests: reqs,
+            reqData: "",
+            rspData: "",
+            tempReq: {},
+            isEditMode: false,
+            eh: {
+                onReadyState: function(status) {
+                    console.log("onReadyState: " + status);
+                },
+
+                onCallincome: function(ano, bno, uud) {
+                    console.log("onCallincome: ano=" + ano + " bno=" + bno + " uud=" + uud);
+                },
+
+                onTalked: function(ano, bno, uud) {
+                    console.log("onTalked: ano=" + ano + " bno=" + bno + " uud=" + uud);
+                },
+
+                onRingStoped: function() {
+                    console.log("onRingStoped");
+                },
+
+                onHookChanged: function(status) {
+                    console.log("onHookChanged: status=" + status);
+                },
+
+                onAgentChanged: function(status) {
+                    console.log("onAgentChanged: status=" + status);
+                },
+
+                onAsyncFinished: function(atype, taskid, ret, desc) {
+                    console.log("onAsyncFinished: atype=" + atype + " taskid=" + taskid + " ret=" + ret + " desc=" + desc);
+                },
+
+                onAllBusy: function(status, acd, quelen) {
+                    console.log("onAllBusy: status=" + status + " acd=" + acd + " quelen=" + quelen);
+                },
+
+                onQuelen: function(acd, quelen) {
+                    console.log("onQuelen: acd=" + acd + " quelen=" + quelen);
+                },
+
+                onSmsincome: function(dtime, from, content, slot) {
+                    console.log("onSmsincome: dtime=" + dtime + " from=" + from+ " content=" + content + " slot=" + slot);
+                },
+
+                onOperCallback: function(flowid, callid, cdrid, direction, teleno, time, menuid, keypress, state) {
+                    console.log("onOperCallback: : flowid=" + flowid + " callid=" + callid + " cdrid=" + cdrid +  " direction=" + direction
+                        + " teleno=" + teleno  + " time=" + time  + " menuid=" + menuid + " keypress=" + keypress 
+                        + " state=" + state)
+                },
+
+                onSpeedCallback: function(flowid, callid, cdrid, direction, teleno, time, menuid, keypress, state, desc, sessionid) {
+                    console.log("onSpeedCallback: flowid=" + flowid + " callid=" + callid + " cdrid=" + cdrid + " direction=" + direction
+                        + " teleno=" + teleno  + " time=" + time  + " menuid=" + menuid + " keypress=" + keypress 
+                        + " state=" + state  + " desc=" + desc + " sessionid=" + sessionid );
+                },
+
+                onTextMessage: function(fromaid, chatmode, text) {
+                    console.log("onTextMessage: fromaid=" + fromaid + " chatmode=" + chatmode+ " content=" + text);
+                }
+            }
+            // um: new UMO()
+        },
+        methods: {
+            handleChangePage() {
+                if (this.docEditor) {
+                    this.docEditor.destroyEditor();
+                    this.docEditor = null;
+                }
+                if ("fp" === this.activePage) {
+                    this.reloadFileIndexData();
+                }
+            },
+            selReq({ name, type, url, data }) {
+                this.tempReq = { name, type, url, data };
+                this.rspData = "";
+                this.reqData = JSON.stringify(data, null, 4)
+            },
+            doReq() {
+                let r = this.$refs.req.innerHTML;
+                if (r) {
+                    r = JSON.parse(r);
+                    this.sendRequset(this.tempReq.url, r, this.tempReq.type, 0).then(res => {
+                        this.rspData = JSON.stringify(res, null, 4);
+                    });
+                }
+            },
+            uploadFile() {
+
+            },
+            createXHR() {
+                return window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
+            },
+            t1() {
+                let ws = new WebSocket("ws://192.168.102.106:9091/websocket/platform/142")
+                ws.onopen = function(){
+                   console.log("open");
+                　　ws.send("hello");
+                }
+                ws.onmessage = function(e){
+                　　console.log(e.data);
+                }
+                ws.onclose = function(e){
+                　　console.log("close");
+                }
+                ws.onerror = function(e){
+                　　console.log(error);
+                }
+                // let _this = this;
+
+                // UMO.start("http://cti3.cloudsilk.net:8181/IPServer", null, this.eh, "0", hex_md5("123456"), 23102, hex_md5("08710360"), "23102", function(cmd, result){
+                //     if (result.errno == 0) {
+                //         //可根据下面的标志刷新当前的状态
+                //         //result.agentstatus
+                //         //result.hookstatus
+                //         //result.ringing
+                //         //result.connected
+                //         UMO.subscribe("smsincome,opercallback,talked", function(cmd, result){
+                //             if (result.errno == 0) {
+                //                 console.log("全局事件订阅成功");
+                //             }
+                //             _this.cbResult(cmd, result);
+                //         }, null);
+                //     }
+                //     _this.cbResult(cmd, result);
+                // }, null);
+                let v1 = 21.12 * 100;
+                let v2 = 0;
+                let v3 = 21.1 * 100;
+                alert(0.1 + 0.2)
+            },
+            
+            cbResult(cmd, result) {
+                if (result.errno == 0) {
+                    console.log(cmd + " ok.");
+                } else {
+                    console.log(cmd + " fail(" + result.errno + "): " + result.errmsg);
+                }
+            },
+            sendRequset(url, data, type, mode = 0) {
+                return new Promise((resolve, reject) => {
+                    type = type.toUpperCase();
+                    let xhr = this.createXHR();
+                    xhr.onreadystatechange = () => {
+                        switch (xhr.readyState){
+                            case 0: this.rspData = moment().format('HH:mm:ss.SSS') + "\tUninitialized\n"; break;
+                            case 1: this.rspData += moment().format('HH:mm:ss.SSS') + "\tOpen\n"; break;
+                            case 2: this.rspData += moment().format('HH:mm:ss.SSS') + "\tSent\n"; break;
+                            case 3: this.rspData += moment().format('HH:mm:ss.SSS') + "\OReceiving\n"; break;
+                            case 4: 
+                                console.log("<<<<< recv response", moment().format('HH:mm:ss.SSS'));
+                                if (xhr.status === 200){
+                                    const r = JSON.parse(xhr.response);
+                                    console.dir(r);
+                                    resolve(r.data);
+                                } else {
+                                    this.rspData += xhr.status;
+                                }
+                        } 
+                    };
+                    xhr.onerror = function (e) {
+                        return e.type;
+                    };
+                    xhr.open(type, url);
+                    xhr.timeout = 60000;
+                    xhr.setRequestHeader("Content-Type", this.contentType[mode]);
+                    xhr.setRequestHeader("Set-Cookie", "SameSite=None; Secure");
+                    xhr.setRequestHeader("Authorization", "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTE4MiwiZXhwIjoxNjEwNjgzMDI0LCJ1c2VyX25hbWUiOiIxNzM0MTM4MTI1MiIsImp0aSI6IjFlM2E1OTk5LTBiZjAtNDZmZi04NDI1LTM5YTY0MDRhMTgxOSIsImNsaWVudF9pZCI6IndlYl9hcHAiLCJzY29wZSI6WyJvcGVuaWQiXX0.UukcVBPft8ROlGHQdylDmDW24hGoWSIEs5TiQLgZl0juARcJ81_ko0t45o3CQZwzQaYumGRcvgKLDFkMy6oLmZCZKO-X8qmSovwFjFX4pL4lGBeCDa9Wmo06KShEzoJOIzcZ-kAGH7Iv7FytY_P5c3xdJ9mOanY9lQwbFH6Io9fuj1x9SFgrKovqh0SIC3fb20E6Wx_KfTWnOHkdZSez-rYsJcgNuY0yC2tMiSA26bGIIIIaeZB7sFRL8ExTM9fIE756sYxVxCX_E7Jc37dHUuPvwljBplF5AMSzd-OJWDusBYC84UqaMI37AozySBnKm6GjC2EV8iPYApcrN6QdbQ");
+                    console.log(">>>>> send request", moment().format('HH:mm:ss.SSS'));
+                    if ("POST" == type) {
+                        console.dir(data);
+                        xhr.send(JSON.stringify(data));
+                    } else {
+                        xhr.send();
+                    }
+                });
+            },
+            submitUpload() {
+                this.$refs.upload.submit();
+            },
+            uploadFile(event) {
+                const file = event.target.files;
+                for (let i = 0; i < file.length; i++) {
+                    const fileName = file[i].name;
+                    const formData = new FormData();
+                    formData.append('file', file[i])
+                    let xhr = this.createXHR();
+                    xhr.open("POST", "http://localhost:9300/api/upload");
+                    xhr.send(formData);
+                }
+            },
+            loadFileindexData() {
+                if (this.hasMore) {
+                    this.sendRequset('http://127.0.0.1:9300/api/query', { 'page': ++this.pageNum, "size": 5 }, "POST", 0).then(res => {
+                        this.hasMore = res.total > this.pageNum * 5;
+                        this.data.push(...res.data);
+                    })
+                }
+            },
+            reloadFileIndexData() {
+                this.pageNum = 0;
+                this.hasMore = true;
+                this.data = [];
+                this.loadFileindexData();
+            },
+            loadFile(id, name) {
+                const conf = {
+                    "document": {},
+                    "editorConfig": {
+                        "user": {
+                            "id": "4399",
+                            "name": "Cheng"
+                        },
+                        "customization": {
+                            "autosave": false,
+                            "chat": false,
+                            "comments": false,
+                            "hideRightMenu": true,
+                            "spellcheck": false,
+                        },
+                        "lang": "zh",
+                        "region": "zh-CN",
+                    },
+                    "height": "100%",
+                    "width": "100%",
+                }
+                if (this.isEditMode) {
+                    conf.editorConfig.callbackUrl = "http://192.168.0.103:9300/api/upload-only-office";
+                } else {
+                    conf.editorConfig.mode = "view";
+                }
+                conf.document.fileType = /\.(\w*)$/.exec(name)[1];
+                conf.document.key = String(id);
+                conf.document.title = name;
+                conf.document.url = `http://192.168.0.103:9300/api/download?id=${id}`;
+                conf.documentType = this.getDocumentType(conf.document.fileType);
+                console.log(`Load file ${id} ${name} ${conf.document.fileType} ${conf.documentType}`);
+                if (this.docEditor) {
+                    this.docEditor.destroyEditor();
+                }
+                this.docEditor = new DocsAPI.DocEditor("placeholder", conf);
+            },
+            getDocumentType(type) {
+                if (['docx', 'doc', 'odt', 'txt', 'pdf'].includes(type)) {
+                    return 'text';
+                } else if (['xlsx', 'xls', 'ods', 'csv'].includes(type)) {
+                    return 'spreadsheet';
+                } else if (['pptx', 'ppt', 'odp'].includes(type)) {
+                    return 'presentation';
+                } else {
+                    return "";
+                }
+            },
+            unfold(k) {
+                this.isFold = false;
+                for (let i = 0; i < 3; i++) {
+                    if (i === k) {
+                        Vue.set(this.spanList, i, 24)
+                    } else {
+                        Vue.set(this.spanList, i, 0)
+                    }
+                }
+            },
+            fold() {
+                this.isFold = true;
+                Vue.set(this.spanList, 0, 9);
+                Vue.set(this.spanList, 1, 6);
+                Vue.set(this.spanList, 2, 9);
+            }
+        },
+        mounted: function () {
+
+        },
+        computed: {
+
+        },
+        beforeDestroy: function () {
+
+        }
+    });
+</script>
+
+</html>

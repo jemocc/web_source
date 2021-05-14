@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>Eureka</title>
+    <link rel="stylesheet" href="vue/element-ui/index.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" style="padding-top: 30px;">
+        <el-table :data="serveInfos" style="width: 100%">
+            <el-table-column prop="name" label="服务名" width='360'></el-table-column>
+            <el-table-column prop="nodes" label="节点(状态)">
+                <template slot-scope="scope">
+                    <el-popover placement="right" width="160" trigger="click" :title="node.remark"
+                        v-for="node in scope.row.nodes" :key='node.nodeId'
+                        content="这是一段内容,这是一段内容,这是一段内容,这是一段内容。">
+                        <el-button type="success" size='mini' v-show="node.status != 'UP'" @click="serviceUp(node)">UP</el-button>
+                        <el-button type="warning" size='mini' v-show="node.status == 'UP'" @click="serviceDown(node)">DOWN</el-button>
+                        <el-button type="danger" size='mini' @click="serviceKill(node)">KILL</el-button>
+                        <el-tag slot="reference" :type="tagType(node)" style="margin:0 3px">
+                            {{node.nodeId}}({{node.status}})
+                        </el-tag>
+                    </el-popover>
+                </template>
+            </el-table-column>
+        </el-table>
+    </div>
+</body>
+<script src="vue/vue.js"></script>
+<script src="vue/element-ui/index.js"></script>
+<script>
+    const app = new Vue({
+        el: "#app",
+        data: {
+            remark: {
+                '192.168.100.139': '服务器 节点',
+                '192.168.102.152': '冉炜 的本地节点',
+                '192.168.102.221': '赵亮 的本地节点',
+                '192.168.102.235': '陈成 的本地节点',
+            },
+            serveInfos: null
+        },
+        methods: {
+            tagType(node) {
+                if(node.status == 'UP' && node.nodeId.includes('192.168.100.139')) {
+                    return 'success';
+                } else if (node.status == 'UP') {
+                    return '';
+                } else {
+                    return 'danger';
+                }
+            },
+            serviceUp(node) {
+                let _this = this;
+                this.doRequest(`http://192.168.100.139:8141/eureka/apps/${node.serviceName}/${node.nodeId}/status?value=UP`, {}, 'PUT')
+                    .then(res => res.text())
+                    .then(res => _this.optSuccess(res));
+            },
+            serviceDown(node) {
+                let _this = this;
+                this.doRequest(`http://192.168.100.139:8141/eureka/apps/${node.serviceName}/${node.nodeId}/status?value=DOWN`,  {}, 'PUT')
+                    .then(res => res.text())
+                    .then(res => _this.optSuccess(res));
+            },
+            serviceKill(node) {
+                let _this = this;
+                this.doRequest(`http://${node.nodeId}/actuator/shutdown`, {}, 'POST')                    
+                    .then(res => res.text())
+                    .then(res => _this.optSuccess(res));
+            },
+            optSuccess(res) {
+                this.getServeInfos();
+            },
+            getServeInfos() {
+                let _this = this;
+                this.doRequest('http://192.168.100.139:8141/eureka/apps')
+                    .then(res => res.text())
+                    .then(res => {
+                        xmlDoc = new DOMParser().parseFromString(res, 'text/xml')
+                        let apps = Array.from(xmlDoc.getElementsByTagName("application"));
+                        _this.serveInfos = apps.map(a => {
+                            let name = a.getElementsByTagName("name")[0].firstChild.nodeValue;
+                            let nodes = Array.from(a.getElementsByTagName("instance")).map(i => {
+                                let host = i.getElementsByTagName("hostName")[0].firstChild.nodeValue;
+                                let nodeId = i.getElementsByTagName("instanceId")[0].firstChild.nodeValue;
+                                let status = i.getElementsByTagName("status")[0].firstChild.nodeValue;
+                                let remark = _this.remark[host] || '未知归属节点';
+                                return {serviceName: name, nodeId, status, remark};
+                            });
+                            
+                            return {name, nodes}
+                        });
+                        console.log(JSON.parse(JSON.stringify(_this.serveInfos)));
+                    });
+            },
+
+            async doRequest(url = '', data = {}, type = 'GET', headers={}) {
+                type = type.toUpperCase();
+                if (type == 'GET') {
+                    Object.keys(data).forEach(key => {
+                        url += key + '=' + data[key] + '&';
+                    })
+                    url = url.replace(/&?$/, '');
+                }
+                let requestConfig = {
+                    credentials: 'include',
+                    method: type,
+                    headers: headers,
+                    mode: "cors",
+                    cache: "no-cache"
+                }
+                if (type == 'POST') {
+                    requestConfig['body'] = JSON.stringify(data);
+                }
+                return await fetch(url, requestConfig);
+            }
+        },
+        mounted: function() {
+            this.getServeInfos();
+        }
+    });
+</script>
+
+</html>

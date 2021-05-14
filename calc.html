@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>戴胜球计划量化计算器</title>
+    <link rel="stylesheet" href="vue/element-ui/index.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+        }
+        .el-row {
+            text-align: center;
+        }
+        .main-box {
+            width: 50%;
+            min-width: 500px;
+            height: 800px;
+            margin: auto;
+            margin-top: 80px;
+        }
+        .row-style {
+
+        }
+        .col-style {
+            padding: 0 !important;
+            border: none !important;
+        }
+        .el-img-style {
+            width: 24px; 
+            height: 24px;
+            margin-top: 8px;
+        }
+        .font-style {
+            font-size: 18px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="main-box">
+            <el-row>
+              <el-col :span="23">
+                    <el-row>
+                        <el-table :data="selectedItems" style="width: 100%" size="mini" row-class-name="row-style">
+                            <el-table-column align="right" class-name="col-style">
+                                <template slot-scope="scope"><el-image class="el-img-style" :src="scope.row.ui" fit="fill"></el-image></template>
+                            </el-table-column>
+                            <el-table-column class-name="col-style">
+                                <template slot-scope="scope">
+                                    <div slot="reference" class="name-wrapper">
+                                        <el-input type="text" v-model="scope.row.num" size="mini" maxlength="10" @change="handleItemNumChange(scope.$index)">
+                                            <template slot="append">/s</template>
+                                        </el-input>
+                                    </div>
+                                </template>
+                            </el-table-column>
+                            <el-table-column class-name="col-style">
+                                <template slot-scope="scope">
+                                    <el-button type="text" icon="el-icon-minus" @click="removeItem(scope.$index)"></el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </el-row>
+                    <el-row><el-button type="text" icon="el-icon-plus" @click="dialogVisible = true">new item</el-button></el-row>
+                    <el-row>
+                        <el-table :data="allNeeded" style="width: 100%" size="mini">
+                            <el-table-column align="right" label="原材料" class-name="col-style">
+                                <template slot-scope="scope">
+                                    <div style="display: inline-block; vertical-align: super;" class="font-style">{{ scope.row.speed }}</div>
+                                    <el-image class="el-img-style" :src="scope.row.itemUi" fit="fill"></el-image></template>
+                            </el-table-column>
+                            <el-table-column align="right" label="传送带" :filter-multiple=false class-name="col-style"
+                                :filters="[{text: '黄带', value: 6}, {text: '绿带', value: 12}, {text: '蓝带', value: 30}]"
+                                :filter-method="beltChangeHandler">
+                                <template slot-scope="scope"><div class="font-style">{{ scope.row.beltNum }}</div></template>
+                            </el-table-column>
+                            <el-table-column align="right" label="生产设备" class-name="col-style">
+                                <template slot-scope="scope">
+                                    <div style="display: inline-block; vertical-align: super;" class="font-style">{{ scope.row.unitNum }}</div>
+                                    <el-image class="el-img-style" :src="scope.row.unitUi" fit="fill"></el-image></template>
+                            </el-table-column>
+                        </el-table>
+                    </el-row>
+                </el-col>
+            </el-row>
+
+            <el-dialog title="选择材料" :visible.sync="dialogVisible" width="30%">
+              <div>
+                  <span v-for="(item, i) in allItemUi"><el-image class="el-img-style" :src="item.ui" fit="fill" @click="handleItemSelect(item.key)"></el-image></span>
+              </div>
+              <span slot="footer" class="dialog-footer">
+                <el-button @click="dialogVisible = false">取 消</el-button>
+                <el-button type="text" @click="dialogVisible = false">确 定</el-button>
+              </span>
+            </el-dialog>
+        </div>
+    </div>
+</body>
+<script src="vue/vue.js"></script>
+<script src="vue/element-ui/index.js"></script>
+<script>
+    const base = {
+        "tk": {"name": "铁矿", "ui": "img/p1.png", productEquipmentKey: "ckj", "need": undefined},
+        "tb": {"name": "铁板", "ui": "img/p2.png", productEquipmentKey: "yll", "need": [{"key": "tk", "num": 1}]}
+    };
+    const productEquipment = {
+        "yll": {productEquipmentUi: "img/p1.png", productCost: 0.2},
+        "ckj": {productEquipmentUi: "img/p2.png", productCost: 1}
+    }
+
+
+    const app = new Vue({
+        el: "#app",
+        data: {
+            base: base,
+            productEquipment: productEquipment,
+            dialogVisible: false,
+            selectedItems: [],
+            allItemUi: [],
+            allNeededMap: {},
+            allNeeded: [],
+            beltSpeed: 6
+        },
+        methods: {
+            beltChangeHandler: function (val, row) {
+                row.beltNum = Math.floor(row.speed * 100 / val) / 100;
+                this.beltSpeed = val;
+                return true;
+            },
+            removeItem: function(key) {
+                this.selectedItems.splice(key, 1);
+                this.calcAllNeeded();
+            },
+            handleItemSelect: function(key) {
+                let {ui} = this.base[key];
+                Vue.set(this.selectedItems, this.selectedItems.length, {key, ui, num: 0});
+                this.dialogVisible = false;
+            },
+            handleItemNumChange: function(index) {
+                this.calcAllNeeded();
+            },
+            calcAllNeeded: function() {
+                // {"itemUi": "img/p1.png", "speed": 180, "beltNum": 30, "unitUi": "img/p1.png", "unitNum": 10}
+                let _this = this;
+                this.allNeeded.splice(0, this.allNeeded.length);
+                this.allNeededMap = {};
+
+                for(let index in this.selectedItems) {
+                    this.calcAllNeeded_0(_this, this.selectedItems[index].key, this.selectedItems[index].num);
+                }
+            },
+            calcAllNeeded_0: function(_this, key, num) {
+                let t = _this.allNeededMap[key];
+                let item = _this.base[key];
+                let productEquipmentItem = _this.productEquipment[item.productEquipmentKey];
+                if (t == undefined) {
+                    let itemUi = item.ui;
+                    let speed = num;
+                    let beltNum = Math.floor(speed * 100 / _this.beltSpeed) / 100;
+                    
+                    let unitUi = productEquipmentItem.productEquipmentUi;
+                    let unitNum = Math.floor(speed * 100 / productEquipmentItem.productCost) / 100;
+
+                    t = {itemUi, speed, beltNum, unitUi, unitNum};
+                    _this.allNeededMap[key] = t;
+
+                    Vue.set(_this.allNeeded, _this.allNeeded.length, t);
+                } else {
+                    t.speed = Number(num) + Number(t.speed);
+                    t.beltNum = Math.floor(t.speed * 100 / _this.beltSpeed) / 100;
+                    t.unitNum = Math.floor(t.speed * 100 / productEquipmentItem.productCost) / 100;
+                }
+                if (item.need != undefined) {
+                    for (let index in item.need) {
+                        _this.calcAllNeeded_0(_this, item.need[index].key, num * item.need[index].num);
+                    }
+                }
+            }
+        },
+        created: function() {
+            for (let key in this.base) {
+                let { ui } = this.base[key];
+                Vue.set(this.allItemUi, this.allItemUi.length, {key, ui});
+            }
+        }
+    });
+</script>
+
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>stack analyse</title>
+    <link rel="stylesheet" href="vue3/element/index.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <el-container>
+        <el-header>
+            <el-button><a href="https://unpkg.com/vue@next" download="vue.global.js">vue.global.js 下载</a></el-button>
+            <el-button><a href="https://unpkg.com/element-plus/lib/theme-chalk/index.css" download="index.css">element index.css 下载</a></el-button>
+            <el-button><a href="https://unpkg.com/element-plus/lib/index.full.js" download="index.full.js">element index.full.js 下载</a></el-button>
+            <el-upload
+                    class="select-file"
+                    ref="upload"
+                    action="#"
+                    :on-preview="handlePreview"
+                    :on-remove="handleRemove"
+                    :file-list="fileList"
+                    :auto-upload="false">
+                <template #trigger>
+                    <el-button size="small" type="primary">选取文件</el-button>
+                </template>
+                <el-button style="margin-left: 10px;" size="small" type="success" @click="submitUpload">上传到服务器</el-button>
+                <template #tip>
+                    <div class="el-upload__tip">
+                        只能上传 jpg/png 文件，且不超过 500kb
+                    </div>
+                </template>
+            </el-upload>
+        </el-header>
+        <el-main>
+            <el-skeleton :loading="loading">
+                <template>
+
+                </template>
+            </el-skeleton>
+        </el-main>
+    </el-container>
+</div>
+</body>
+<script src="vue3/vue.global.js"></script>
+<script src="vue3/element/index.full.js"></script>
+<script>
+    const App = {
+        data() {
+            return {
+                loading: true,
+                currentDate: '123-12-23',
+            };
+        },
+    };
+    const app = Vue.createApp(App);
+    app.use(ElementPlus);
+    app.mount("#app");
+</script>
+
+</html>
